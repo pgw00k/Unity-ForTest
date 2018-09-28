@@ -74,10 +74,16 @@ public class WebCamTextureUI: MonoBehaviour {
             {
                 yield return false;
             }
+            SetBackGroundExpend();
             webcamTexture = new WebCamTexture(devices[0].name, 1920, 1080,15);
             rawImage.texture = webcamTexture;
             webcamTexture.Play();
         }
 
+    }
+
+    public void SetBackGroundExpend()
+    {
+        rawImage.rectTransform.sizeDelta = new Vector2(Screen.width,Screen.height);
     }
 }

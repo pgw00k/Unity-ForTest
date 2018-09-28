@@ -17,7 +17,6 @@ public class HttpRequestWWW : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		
 	}
 	
 	// Update is called once per frame
@@ -25,6 +24,7 @@ public class HttpRequestWWW : MonoBehaviour {
 		
 	}
 
+#if UNITY_EDITOR
     private void OnGUI()
     {
         if (GUILayout.Button("Link"))
@@ -35,12 +35,19 @@ public class HttpRequestWWW : MonoBehaviour {
             }
         }
     }
+#endif
 
-    public void StartLink(string URL)
+    public void StartLink(string URL =null)
     {
-        FilePath = Application.persistentDataPath + "/" + DateTime.Now.ToString("yyyy-MM-dd") + ".png";
+        if (URL == null && URLInspector != null)
+        {
+            URL = URLInspector;
+        }
+        FilePath = Application.persistentDataPath + "/" + DateTime.Now.ToString("yyyy-MM-dd-hhmmss") + ".png";
         ScreenCapture.CaptureScreenshot(FilePath);
         StartCoroutine(HttpRequest(URL));
+
+        gameObject.SetActive(true);
     }
 
     /// <summary>
@@ -48,14 +55,51 @@ public class HttpRequestWWW : MonoBehaviour {
     /// </summary>
     /// <param name="URL"></param>
     /// <returns></returns>
-    public IEnumerator<WWW> HttpRequest(string URL)
+    public IEnumerator HttpRequest(string URL)
     {
+        yield return new WaitForSeconds(3);
         JsonData data = new JsonData();
         byte[] FileData = File.ReadAllBytes(FilePath);
         data["img"] = Convert.ToBase64String(FileData);
 
         WWW www = new WWW(URL,System.Text.Encoding.Default.GetBytes(data.ToJson()));
         yield return www;
-        Debug.LogFormat("HttpRequestResult:{0}",www.text);
+        Debug.LogFormat("HttpRequestResult:{0}", www.text);
+        JsonData returnData = JsonMapper.ToObject(www.text);
+        if ((bool)returnData["result"])
+        {
+            //StartDownload(returnData["url"].ToString());
+            WWW www_2 = new WWW(returnData["url"].ToString());
+            yield return www_2;
+            try
+            {
+                GetComponent<RawImage>().texture = www_2.texture;
+            }
+            finally
+            { }
+        }
+    }
+
+    public void StartDownload(string url)
+    {
+        StartCoroutine(url);
+    }
+
+
+    /// <summary>
+    /// 下载并显示二维码
+    /// </summary>
+    /// <param name="URL"></param>
+    /// <returns></returns>
+    public IEnumerator HttpRequestOver(string URL)
+    {
+        WWW www = new WWW(URL);
+        yield return www;
+        try
+        {
+            GetComponent<RawImage>().texture = www.texture;
+        }
+        finally
+        { }
     }
 }
